@@ -1,40 +1,21 @@
 from datetime import datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from todo_app.db import SessionLocal
-from todo_app.config import settings
-from todo_app.models import User
-
+import todo_app.models as models
+from todo_app.schemas import CreateUserSchema
 
 # to get a string like this run:
 # openssl rand -hex 32
-# SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-# ALGORITHM = "HS256"
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-router = APIRouter(
-    prefix="/auth",
-    tags=["auth"],
-    responses={401: {"description": "Unauthorized"}}
-)
-
-# fake_users_db = {
-#     "johndoe": {
-#         "username": "johndoe",
-#         "full_name": "John Doe",
-#         "email": "johndoe@example.com",
-#         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-#         "disabled": False,
-#     }
-# }
 
 
 class Token(BaseModel):
@@ -42,19 +23,13 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
-    username: str | None = None
-
-
-# class User(BaseModel):
-#     username: str
-#     email: str | None = None
-#     full_name: str | None = None
-#     disabled: bool | None = None
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
+router = APIRouter(
+    prefix="/auth", tags=["auth"]
+)
 
 
 def verify_password(plain_password, hashed_password):
@@ -67,8 +42,10 @@ def get_password_hash(password):
 
 def get_user(username: str):
     with SessionLocal() as session:
-        user = session.query(User).filter(User.username == username).first()
-        print(f"The user is {user}")
+        user = (
+            session.query(models.User).filter(models.User.username == username).first()
+        )
+
     return user
 
 
@@ -81,6 +58,43 @@ def authenticate_user(username: str, password: str):
     return user
 
 
+@router.post("/create/user")
+async def create_new_user(create_user_schema: CreateUserSchema):
+    """
+    Create a new user
+    """
+    with SessionLocal() as session:
+        username_exists = bool(
+            session.query(models.User).filter(models.User.username == create_user_schema.username).first()
+        )
+        if username_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists",
+            )
+        create_user_model = models.User()
+        create_user_model.username = create_user_schema.username
+        email_exists = bool(
+            session.query(models.User).filter(models.User.email == create_user_schema.email).first()
+        )
+        if email_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An account with the specified email already exists",
+            )
+        create_user_model.email = create_user_schema.email
+        create_user_model.first_name = create_user_schema.first_name
+        create_user_model.last_name = create_user_schema.last_name
+
+        hash_password = get_password_hash(create_user_schema.password)
+        create_user_model.hashed_password = hash_password
+
+        session.add(create_user_model)
+        session.commit()
+
+        return Response(status_code=status.HTTP_201_CREATED)
+
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
@@ -88,7 +102,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.hashing_algorithm)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -99,21 +113,20 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.hashing_algorithm])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(username=token_data.username)
+    user = get_user(username=username)
     if user is None:
         raise credentials_exception
-    return userd
+    return user
 
 
 async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[models.User, Depends(get_current_user)]
 ):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
@@ -124,7 +137,7 @@ async def get_current_active_user(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
-    user = authenticate_user(form_data.username, form_data.password)
+    user = authenticate_user(username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -136,17 +149,3 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.get("/users/me/")
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)]
-):
-    return current_user
-
-
-@router.get("/users/me/items/")
-async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)]
-):
-    return [{"item_id": "Foo", "owner": current_user.username}]

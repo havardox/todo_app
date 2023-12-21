@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "todo_app"
-version = "0.1.0"
+name = "todo-app"
+version = "1.0.0"
 description = ""
 authors = ["Havardox <harald.varner@gmail.com>"]
 

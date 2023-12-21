@@ -1,0 +1,16 @@
+version: "3.9"
+
+volumes:
+  local-postgres-data:
+
+services:
+  todo_app_web:
+    extends:
+      file: docker-compose-dev.yml
+      service: todo_app_web
+    # Overrides default command so things don't shut down after the process ends.
+    command: /bin/sh -c "while sleep 1000; do :; done"
+  todo_app_db:
+    extends:
+      file: docker-compose-dev.yml
+      service: todo_app_db

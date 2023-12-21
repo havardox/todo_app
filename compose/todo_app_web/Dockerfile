@@ -47,4 +47,4 @@ RUN apt-get update -qq \
 
 ENTRYPOINT ["./compose/todo_app_web/entrypoint.sh"]
 
-# CMD ["python", "./todo_app/todo_app_admin/manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "todo_app/main.py"]

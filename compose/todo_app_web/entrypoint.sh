@@ -11,7 +11,4 @@ then
     echo "PostgreSQL started"
 fi
 
-# The Dev Containers extension for Visual Studio Code needs the container
-# to be alive. Otherwise, Dev Containers exits with "Stdin closed!".
-while sleep 1000; do :; done
 exec "$@"
