@@ -1,4 +1,6 @@
+from typing import Literal
 from fastapi import Depends, HTTPException, APIRouter, Response, status
+import datetime
 
 from todo_app.schemas import TodoSchema
 import todo_app.models as models
@@ -36,7 +38,7 @@ async def create_todo(
 
 
 @router.get("/user")
-async def get_all_todos(user: models.User = Depends(get_current_active_user)):
+async def get_todos(date_from: datetime.date | None = None, date_until: datetime.date | None = None, user: models.User = Depends(get_current_active_user)):
     with SessionLocal() as session:
         all_todos = session.query(models.Todo).filter(models.Todo.user == user).all()
     if all_todos is not None:
