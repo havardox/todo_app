@@ -1,5 +1,5 @@
 from typing import Literal
-from fastapi import Depends, HTTPException, APIRouter, Response, status
+from fastapi import Depends, HTTPException, APIRouter, Query, Response, status
 import datetime
 
 from todo_app.schemas import TodoSchema
@@ -22,11 +22,12 @@ async def create_todo(
     user: models.User = Depends(get_current_active_user),
 ):
     with SessionLocal() as session:
-        
         todo = models.Todo()
         todo.title = todo_schema.title
         todo.description = todo_schema.description
         todo.priority = todo_schema.priority
+        todo.date_due = todo_schema.date_due
+        todo.time_due = todo_schema.time_due
         todo.done = todo_schema.done
         todo.user = user
 
@@ -39,9 +40,20 @@ async def create_todo(
 
 
 @router.get("/user")
-async def get_todos(date_from: datetime.date | None = None, date_until: datetime.date | None = None, user: models.User = Depends(get_current_active_user)):
+async def get_todos(
+    date_from: datetime.date | None = Query(None, description="The date the the task is set to be due"),
+    date_until: datetime.date | None = Query(None, description="The time the the task is set to be due. Date must not be empty"),
+    user: models.User = Depends(get_current_active_user),
+):
     with SessionLocal() as session:
-        all_todos = session.query(models.Todo).filter(models.Todo.user == user).all()
+        query = session.query(models.Todo).filter(models.Todo.user == user)
+        if date_from is not None:
+            query = query.filter(models.Todo.date_due >= date_from)
+        if date_until is not None:
+            query = query.filter(
+                models.Todo.date_due <= date_until,
+            )
+        all_todos = query.all()
     if all_todos is not None:
         return all_todos
     raise HTTPException(status_code=404, detail="No todos found")
@@ -49,7 +61,6 @@ async def get_todos(date_from: datetime.date | None = None, date_until: datetime
 
 @router.get("/{todo_id}")
 async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_user)):
-    
     with SessionLocal() as session:
         todo = (
             session.query(models.Todo)
@@ -67,7 +78,9 @@ async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_
 
 @router.put("/{todo_id}")
 async def update_todo(
-    todo_id: int, todo_schema: TodoSchema, user: models.User = Depends(get_current_active_user)
+    todo_id: int,
+    todo_schema: TodoSchema,
+    user: models.User = Depends(get_current_active_user),
 ):
     with SessionLocal() as session:
         todo = (
