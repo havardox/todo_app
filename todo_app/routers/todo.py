@@ -22,6 +22,7 @@ async def create_todo(
     user: models.User = Depends(get_current_active_user),
 ):
     with SessionLocal() as session:
+        
         todo = models.Todo()
         todo.title = todo_schema.title
         todo.description = todo_schema.description
@@ -48,6 +49,7 @@ async def get_todos(date_from: datetime.date | None = None, date_until: datetime
 
 @router.get("/{todo_id}")
 async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_user)):
+    
     with SessionLocal() as session:
         todo = (
             session.query(models.Todo)

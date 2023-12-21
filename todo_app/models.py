@@ -1,8 +1,12 @@
+import datetime
+
 from sqlalchemy import (
     ForeignKey,
     SmallInteger,
     String,
     Boolean,
+    Date,
+    Time
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,7 +22,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(256))
     hashed_password: Mapped[str] = mapped_column(String(2048))
     disabled: Mapped[bool] = mapped_column(Boolean, default=False)
-    todos: Mapped["Todo"] = relationship(back_populates="user")
+    todos: Mapped[list["Todo"]] = relationship(back_populates="user")
 
 
 class Todo(Base):
@@ -28,6 +32,8 @@ class Todo(Base):
     title: Mapped[str] = mapped_column(String(256))
     description: Mapped[str] = mapped_column(String(2048))
     priority: Mapped[int] = mapped_column(SmallInteger)
+    date_due: Mapped[datetime.date] = mapped_column(Date, nullable=True)
+    time_due: Mapped[datetime.time] = mapped_column(Time, nullable=True)
     done: Mapped[bool] = mapped_column(Boolean)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    user: Mapped["User"] = relationship(back_populates="todos")
+    user: Mapped["User"] = relationship(back_populates="todos", foreign_keys=[user_id])

@@ -1,4 +1,5 @@
 from typing import Optional
+import pydantic
 from pydantic import BaseModel, Field, validator
 import datetime
 
@@ -7,13 +8,17 @@ class TodoSchema(BaseModel):
     title: str
     description: Optional[str]
     priority: int = Field(default=1, gt=0, lt=7, description="The priority must be between 1-6")
-    datetime_due: datetime.datetime | None = None
+    date_due: datetime.date | None = None
+    time_due: datetime.time | None = None
     done: bool
 
-    @validator("datetime_due")
-    def ensure_date_range(cls, v):
-        print(type(v))
-        return v
+    @validator('time_due')
+    @classmethod
+    def value_must_equal_bar(cls, value: str, values: dict):
+        if "date_due" not in values:
+            raise ValueError("time_due can't be set when date_due isn't set")
+
+        return value
 
 class CreateUserSchema(BaseModel):
     username: str

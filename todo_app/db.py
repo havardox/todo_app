@@ -18,7 +18,7 @@ connection_uri = URL.create(
     database=settings.db_database_name,
 )
 
-engine = create_engine(connection_uri, echo=True)
+engine = create_engine(connection_uri)
 
 SessionLocal = sessionmaker(
     engine
