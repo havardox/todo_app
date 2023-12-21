@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class TodoSchema(BaseModel):
     title: str
     description: Optional[str]
-    priority: int = Field(gt=0, lt=6, description="The priority must be between 1-5")
+    priority: int = Field(default=1, gt=1, lt=6, description="The priority must be between 1-6")
     done: bool
 
 
