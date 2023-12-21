@@ -15,12 +15,21 @@ models.Base.metadata.create_all(bind=engine)
 
 # ___________ Create ___________ #
 
-
 @router.post("/")
 async def create_todo(
     todo_schema: TodoSchema,
     user: models.User = Depends(get_current_active_user),
 ):
+    """
+    Create a new todo item.
+
+    Parameters:
+    - `todo_schema`: The schema representing the todo item data.
+    - `user`: The currently authenticated user.
+
+    Returns:
+    - `Response`: HTTP response indicating the success of the operation.
+    """
     with SessionLocal() as session:
         todo = models.Todo()
         todo.title = todo_schema.title
@@ -38,13 +47,23 @@ async def create_todo(
 
 # ___________ Read ___________ #
 
-
 @router.get("/user")
 async def get_todos(
-    date_from: datetime.date | None = Query(None, description="The date the the task is set to be due"),
-    date_until: datetime.date | None = Query(None, description="The time the the task is set to be due. Date must not be empty"),
+    date_from: datetime.date | None = Query(None, description="The starting date filter."),
+    date_until: datetime.date | None = Query(None, description="The ending date filter."),
     user: models.User = Depends(get_current_active_user),
 ):
+    """
+    Retrieve todos for the authenticated user based on optional date filters.
+
+    Parameters:
+    - `date_from`: The starting date filter.
+    - `date_until`: The ending date filter.
+    - `user`: The currently authenticated user.
+
+    Returns:
+    - List of todos for the user.
+    """
     with SessionLocal() as session:
         query = session.query(models.Todo).filter(models.Todo.user == user)
         if date_from is not None:
@@ -61,6 +80,16 @@ async def get_todos(
 
 @router.get("/{todo_id}")
 async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_user)):
+    """
+    Retrieve a specific todo item for the authenticated user.
+
+    Parameters:
+    - `todo_id`: The ID of the todo item to retrieve.
+    - `user`: The currently authenticated user.
+
+    Returns:
+    - The requested todo item.
+    """
     with SessionLocal() as session:
         todo = (
             session.query(models.Todo)
@@ -75,13 +104,23 @@ async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_
 
 # ___________ Update ___________ #
 
-
 @router.put("/{todo_id}")
 async def update_todo(
     todo_id: int,
     todo_schema: TodoSchema,
     user: models.User = Depends(get_current_active_user),
 ):
+    """
+    Update an existing todo item for the authenticated user.
+
+    Parameters:
+    - `todo_id`: The ID of the todo item to update.
+    - `todo_schema`: The schema representing the updated todo item data.
+    - `user`: The currently authenticated user.
+
+    Returns:
+    - `Response`: HTTP response indicating the success of the operation.
+    """
     with SessionLocal() as session:
         todo = (
             session.query(models.Todo)
@@ -105,9 +144,18 @@ async def update_todo(
 
 # ___________ Delete ___________ #
 
-
 @router.delete("/{todo_id}")
 async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user)):
+    """
+    Delete a todo item for the authenticated user.
+
+    Parameters:
+    - `todo_id`: The ID of the todo item to delete.
+    - `user`: The currently authenticated user.
+
+    Returns:
+    - `Response`: HTTP response indicating the success of the operation.
+    """
     with SessionLocal() as session:
         todo = (
             session.query(models.Todo)

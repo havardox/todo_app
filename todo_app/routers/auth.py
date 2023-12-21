@@ -27,9 +27,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-router = APIRouter(
-    prefix="/auth", tags=["auth"]
-)
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def verify_password(plain_password, hashed_password):
@@ -65,7 +63,9 @@ async def create_new_user(create_user_schema: CreateUserSchema):
     """
     with SessionLocal() as session:
         username_exists = bool(
-            session.query(models.User).filter(models.User.username == create_user_schema.username).first()
+            session.query(models.User)
+            .filter(models.User.username == create_user_schema.username)
+            .first()
         )
         if username_exists:
             raise HTTPException(
@@ -75,7 +75,9 @@ async def create_new_user(create_user_schema: CreateUserSchema):
         create_user_model = models.User()
         create_user_model.username = create_user_schema.username
         email_exists = bool(
-            session.query(models.User).filter(models.User.email == create_user_schema.email).first()
+            session.query(models.User)
+            .filter(models.User.email == create_user_schema.email)
+            .first()
         )
         if email_exists:
             raise HTTPException(
