@@ -14,9 +14,9 @@ class TodoSchema(BaseModel):
 
     @validator('time_due')
     @classmethod
-    def value_must_equal_bar(cls, value: str, values: dict):
+    def date_must_exist_if_time(cls, value: str, values: dict):
         if "date_due" not in values:
-            raise ValueError("time_due can't be set when date_due isn't set")
+            raise ValueError("time_due can't be set when date_due doesn't exist")
 
         return value
 
