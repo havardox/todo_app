@@ -33,7 +33,7 @@ class Todo(Base):
     description: Mapped[str] = mapped_column(String(2048))
     priority: Mapped[int] = mapped_column(SmallInteger)
     date_due: Mapped[datetime.date] = mapped_column(Date, nullable=True)
-    time_due: Mapped[datetime.time] = mapped_column(Time, nullable=True)
+    time_due: Mapped[datetime.time] = mapped_column(Time(timezone=True), nullable=True)
     done: Mapped[bool] = mapped_column(Boolean)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     user: Mapped["User"] = relationship(back_populates="todos", foreign_keys=[user_id])
