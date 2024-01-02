@@ -10,7 +10,6 @@ from todo_app.config import settings
 class Base(DeclarativeBase):
     pass
 
-print(f"The port is {settings.db_port}")
 connection_uri = URL.create(
     settings.db_engine,
     username=settings.db_username,

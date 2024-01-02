@@ -1,4 +1,5 @@
 from typing import Literal
+from pydantic import BaseModel
 from fastapi import Depends, HTTPException, APIRouter, Query, Response, status
 import datetime
 
@@ -14,6 +15,7 @@ router = APIRouter(
 models.Base.metadata.create_all(bind=engine)
 
 # ___________ Create ___________ #
+
 
 @router.post("/")
 async def create_todo(
@@ -45,12 +47,19 @@ async def create_todo(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+class Message(BaseModel):
+    message: str
+
+
 # ___________ Read ___________ #
+
 
 @router.get("/user")
 async def get_todos(
-    date_from: datetime.date | None = Query(None, description="The starting date filter."),
-    date_until: datetime.date | None = Query(None, description="The ending date filter."),
+    date_from: datetime.date
+    | None = Query(None, description="The starting date filter."),
+    date_until: datetime.date
+    | None = Query(None, description="The ending date filter."),
     user: models.User = Depends(get_current_active_user),
 ):
     """
@@ -104,6 +113,7 @@ async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_
 
 # ___________ Update ___________ #
 
+
 @router.put("/{todo_id}")
 async def update_todo(
     todo_id: int,
@@ -143,6 +153,7 @@ async def update_todo(
 
 
 # ___________ Delete ___________ #
+
 
 @router.delete("/{todo_id}")
 async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user)):

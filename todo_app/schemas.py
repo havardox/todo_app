@@ -5,12 +5,12 @@ import datetime
 
 
 class TodoSchema(BaseModel):
-    title: str
-    description: Optional[str]
+    title: str = Field(..., min_length=5, max_length=256)
+    description: str | None = Field(None, max_length=2048)
     priority: int = Field(default=1, gt=0, lt=7, description="The priority must be between 1-6")
     date_due: datetime.date | None = None
     time_due: datetime.time | None = None
-    done: bool
+    done: bool = False
 
     @validator('time_due')
     @classmethod
@@ -21,9 +21,9 @@ class TodoSchema(BaseModel):
         return value
 
 class CreateUserSchema(BaseModel):
-    username: str
-    email: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
-    password: str
- 
+    username: str = Field(..., max_length=30)
+    email: str = Field(..., max_length=320)
+    first_name: str | None = Field(None, max_length=256)
+    last_name: str | None = Field(None, max_length=256)
+    password: str = Field(..., max_length=2048)
+
