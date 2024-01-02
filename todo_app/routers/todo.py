@@ -14,9 +14,8 @@ router = APIRouter(
 
 models.Base.metadata.create_all(bind=engine)
 
+
 # ___________ Create ___________ #
-
-
 @router.post("/")
 async def create_todo(
     todo_schema: TodoSchema,
@@ -52,8 +51,6 @@ class Message(BaseModel):
 
 
 # ___________ Read ___________ #
-
-
 @router.get("/user")
 async def get_todos(
     date_from: datetime.date
@@ -112,8 +109,6 @@ async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_
 
 
 # ___________ Update ___________ #
-
-
 @router.put("/{todo_id}")
 async def update_todo(
     todo_id: int,
@@ -153,8 +148,6 @@ async def update_todo(
 
 
 # ___________ Delete ___________ #
-
-
 @router.delete("/{todo_id}")
 async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user)):
     """
