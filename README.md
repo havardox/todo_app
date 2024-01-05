@@ -1,7 +1,7 @@
 # todo-app
 # Installation
 
-1. Install Docker
+1. Install Docker: https://docs.docker.com/get-docker/
 2. Chek if your installation comes with Docker Compose with the command `docker compose` or `docker-compose`. If not, install Docker Compose here: https://docs.docker.com/compose/install/
 3. Done
 
