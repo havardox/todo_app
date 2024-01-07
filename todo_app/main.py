@@ -8,6 +8,7 @@ from todo_app.routers import auth, todo
 
 app = FastAPI()
 
+models.Base.metadata.drop_all(bind=engine)
 models.Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router, tags=["auth"])

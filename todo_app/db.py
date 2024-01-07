@@ -19,7 +19,7 @@ connection_uri = URL.create(
     database=settings.db_database_name,
 )
 
-engine = create_engine(connection_uri)
+engine = create_engine(connection_uri, connect_args={"options": "-c timezone=utc"})
 
 SessionLocal = sessionmaker(
     engine
