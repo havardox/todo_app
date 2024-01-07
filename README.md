@@ -12,5 +12,5 @@ A RESTful API for a todo app. Powered by FastAPI.
 `docker compose -f docker-compose-dev.yml up`
 
 ## Swagger UI
-Go to `http://0.0.0.0:8000/docs`. Authentication is [Resource Owner Password Credentials flow](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.3). Create a user with the `/auth/create/user` endpoint.
+Go to `http://0.0.0.0:8000/docs`. Authorization is [Resource Owner Password Credentials flow](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.3). Create a user with the `/auth/create/user` endpoint.
 Then click the green "Authorize" button and enter your username and password.
