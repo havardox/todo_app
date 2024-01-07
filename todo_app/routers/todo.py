@@ -193,7 +193,7 @@ async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user
         )
 
         if todo is None:
-            raise HTTPException(status_code=404, detail="Todo not found")
+            raise HTTPException(status_code=404, detail=DELETE_TODO_RESPONSES[404]["descrtiption"])
 
         session.query(models.Todo).filter(models.Todo.id == todo_id).delete()
         session.commit()
