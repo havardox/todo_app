@@ -1,9 +1,18 @@
-from typing import Literal
-from pydantic import BaseModel
-from fastapi import Depends, HTTPException, APIRouter, Query, Response, status
+import urllib.parse
 import datetime
 
+from pydantic import BaseModel
+from fastapi import Depends, HTTPException, APIRouter, Query, Request, Response
+
 from todo_app.schemas import TodoSchema
+from todo_app.responses import (
+    DELETE_TODO_RESPONSES,
+    FETCH_USER_RESPONSES,
+    CREATE_TODO_RESPONSES,
+    GET_TODO_RESPONSES,
+    LIST_TODOS_RESPONSES,
+    UPDATE_TODO_RESPONSES,
+)
 import todo_app.models as models
 from todo_app.db import SessionLocal, engine
 from todo_app.routers.auth import get_current_active_user
@@ -16,8 +25,12 @@ models.Base.metadata.create_all(bind=engine)
 
 
 # ___________ Create ___________ #
-@router.post("/")
+@router.post(
+    "/", status_code=201, responses=FETCH_USER_RESPONSES | CREATE_TODO_RESPONSES
+)
 async def create_todo(
+    request: Request,
+    response: Response,
     todo_schema: TodoSchema,
     user: models.User = Depends(get_current_active_user),
 ):
@@ -43,16 +56,18 @@ async def create_todo(
 
         session.add(todo)
         session.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-class Message(BaseModel):
-    message: str
+        response.headers["Location"] = urllib.parse.urljoin(
+            str(request.url), str(todo.id)
+        )
 
 
 # ___________ Read ___________ #
-@router.get("/user")
-async def get_todos(
+@router.get(
+    "/user",
+    status_code=200,
+    responses=FETCH_USER_RESPONSES | LIST_TODOS_RESPONSES,
+)
+async def list_todos(
     date_from: datetime.date
     | None = Query(None, description="The starting date filter."),
     date_until: datetime.date
@@ -68,7 +83,7 @@ async def get_todos(
     - `user`: The currently authenticated user.
 
     Returns:
-    - List of todos for the user.
+    - List of todos created by the user.
     """
     with SessionLocal() as session:
         query = session.query(models.Todo).filter(models.Todo.user == user)
@@ -79,12 +94,12 @@ async def get_todos(
                 models.Todo.date_due <= date_until,
             )
         all_todos = query.all()
-    if all_todos is not None:
-        return all_todos
-    raise HTTPException(status_code=404, detail="No todos found")
+    return all_todos
 
 
-@router.get("/{todo_id}")
+@router.get(
+    "/{todo_id}", status_code=200, responses=FETCH_USER_RESPONSES | GET_TODO_RESPONSES
+)
 async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_user)):
     """
     Retrieve a specific todo item for the authenticated user.
@@ -103,13 +118,19 @@ async def get_todo(todo_id: int, user: models.User = Depends(get_current_active_
             .first()
         )
 
-    if todo is not None:
-        return todo
-    raise HTTPException(status_code=404, detail="Todo not found")
+    if todo is None:
+        raise HTTPException(
+            status_code=404, detail=GET_TODO_RESPONSES[404]["description"]
+        )
+    return todo
 
 
 # ___________ Update ___________ #
-@router.put("/{todo_id}")
+@router.put(
+    "/{todo_id}",
+    status_code=204,
+    responses=FETCH_USER_RESPONSES | UPDATE_TODO_RESPONSES,
+)
 async def update_todo(
     todo_id: int,
     todo_schema: TodoSchema,
@@ -134,7 +155,9 @@ async def update_todo(
         )
 
         if todo is None:
-            raise HTTPException(status_code=404, detail="Todo not found")
+            raise HTTPException(
+                status_code=404, detail=UPDATE_TODO_RESPONSES[404]["description"]
+            )
 
         todo.title = todo_schema.title
         todo.description = todo_schema.description
@@ -144,11 +167,13 @@ async def update_todo(
         session.add(todo)
         session.commit()
 
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
 
 # ___________ Delete ___________ #
-@router.delete("/{todo_id}")
+@router.delete(
+    "/{todo_id}",
+    status_code=204,
+    responses=FETCH_USER_RESPONSES | DELETE_TODO_RESPONSES,
+)
 async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user)):
     """
     Delete a todo item for the authenticated user.
@@ -172,5 +197,3 @@ async def delete_todo(todo_id: int, user: dict = Depends(get_current_active_user
 
         session.query(models.Todo).filter(models.Todo.id == todo_id).delete()
         session.commit()
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -8,6 +8,11 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from todo_app.db import SessionLocal
+from todo_app.responses import (
+    LOGIN_RESPONSES,
+    CREATE_USER_RESPONSES,
+    FETCH_USER_RESPONSES,
+)
 from todo_app.config import settings
 import todo_app.models as models
 from todo_app.schemas import CreateUserSchema
@@ -56,7 +61,7 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-@router.post("/create/user")
+@router.post("/create/user", status_code=204, responses=CREATE_USER_RESPONSES)
 async def create_new_user(create_user_schema: CreateUserSchema):
     """
     Create a new user
@@ -69,7 +74,7 @@ async def create_new_user(create_user_schema: CreateUserSchema):
         )
         if username_exists:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Username already exists",
             )
         create_user_model = models.User()
@@ -81,7 +86,7 @@ async def create_new_user(create_user_schema: CreateUserSchema):
         )
         if email_exists:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="An account with the specified email already exists",
             )
         create_user_model.email = create_user_schema.email
@@ -93,8 +98,6 @@ async def create_new_user(create_user_schema: CreateUserSchema):
 
         session.add(create_user_model)
         session.commit()
-
-        return Response(status_code=status.HTTP_201_CREATED)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -110,8 +113,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        status_code=401,
+        detail=FETCH_USER_RESPONSES[401]["description"],
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -131,19 +134,19 @@ async def get_current_active_user(
     current_user: Annotated[models.User, Depends(get_current_user)]
 ):
     if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=400, detail=FETCH_USER_RESPONSES[401]["description"])
     return current_user
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", status_code=200, response_model=Token, responses=LOGIN_RESPONSES)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
     user = authenticate_user(username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            status_code=401,
+            detail=LOGIN_RESPONSES[401]["description"],
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
