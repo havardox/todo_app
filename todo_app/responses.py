@@ -10,12 +10,12 @@ LOGIN_RESPONSES = {
 
 FETCH_USER_RESPONSES = {
     400: {"description": "Inactive user"},
-    401: {"description": "Could not validate credentials"},
+    401: {"description": "Not authenticated or unable to validate credentials"},
 }
 
 CREATE_TODO_RESPONSES = {201: {"description": "Todo successfully created"}}
 
-LIST_TODOS_RESPONSES = {200: {"description": "List of todos created by the user."}}
+LIST_TODOS_RESPONSES = {200: {"description": "List of todos created by the user"}}
 
 GET_TODO_RESPONSES = {
     200: {"description": "The returned todo"},
